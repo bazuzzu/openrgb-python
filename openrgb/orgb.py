@@ -391,7 +391,7 @@ class OpenRGBClient(utils.RGBObject):
         self.address = address
         self.port = port
         self.name = name
-        self.update()
+        self.comms.requestDeviceNum()
 
     def __repr__(self):
         return f"OpenRGBClient(address={self.address}, port={self.port}, name={self.name})"
