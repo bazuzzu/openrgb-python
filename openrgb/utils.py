@@ -418,6 +418,7 @@ class ZoneData:
     mat_width: Optional[int]
     matrix_map: Optional[list[list[Optional[int]]]] = None
     segments: Optional[list[SegmentData]] = None
+    flags: int = 0
     leds: list[LEDData] = field(default_factory=list)
     colors: list[RGBColor] = field(default_factory=list)
     start_idx: int = 0
@@ -453,6 +454,10 @@ class ZoneData:
 
         if version >= 4:
             data += pack_list(self.segments, version)  # type: ignore
+
+        if version >= 5:
+            data += struct.pack("I", self.flags)
+
         return data
 
     @classmethod
@@ -485,6 +490,12 @@ class ZoneData:
             segments = parse_list(SegmentData, data, version)
         else:
             segments = None
+
+        if version >= 5:
+            flags = parse_var('I', data)
+        else:
+            flags = 0
+
         return cls(
             name,
             zone_type,
@@ -494,7 +505,8 @@ class ZoneData:
             height,
             width,
             matrix,
-            segments
+            segments,
+            flags
         )
 
 
@@ -557,6 +569,8 @@ class ControllerData:
     modes: list[ModeData]
     colors: list[RGBColor]
     active_mode: int
+    controller_flags: int = 0
+    led_display_names: list[str] = field(default_factory=list)
 
     def pack(self, version: int) -> bytes:
         '''
@@ -575,6 +589,13 @@ class ControllerData:
             + pack_list(self.leds, version)
             + pack_list(self.colors, version)
         )
+
+        if version >= 5:
+            buff += struct.pack("H", len(self.led_display_names))
+            for name in self.led_display_names:
+                buff += pack_string(name)
+            buff += struct.pack("I", self.controller_flags)
+
         buff = struct.pack("I", len(buff) + struct.calcsize("I")) + buff
         return buff
 
@@ -603,6 +624,17 @@ class ControllerData:
         zones = parse_list(ZoneData, data, version)
         leds = parse_list(LEDData, data, version)
         colors = parse_list(RGBColor, data, version)
+
+        if version >= 5:
+            num_led_display_names = parse_var('H', data)
+            led_display_names = []
+            for _ in range(num_led_display_names):
+                led_display_names.append(parse_string(data))
+            controller_flags = parse_var('I', data)
+        else:
+            led_display_names = []
+            controller_flags = 0
+
         i = 0
         for zone in zones:
             zone.start_idx = i
@@ -628,7 +660,9 @@ class ControllerData:
             zones,
             modes,
             colors,
-            active_mode
+            active_mode,
+            controller_flags,
+            led_display_names
         )
 
 

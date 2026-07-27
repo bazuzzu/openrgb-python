@@ -6,7 +6,7 @@ import threading
 from openrgb import utils
 from typing import Callable, Optional
 
-OPENRGB_PROTOCOL_VERSION = 4
+OPENRGB_PROTOCOL_VERSION = 5
 
 if platform.system() == "Linux":
     NOSIGNAL: int = socket.MSG_NOSIGNAL
@@ -295,6 +295,8 @@ class NetworkClient:
         elif self._protocol_version < 4 and packet_type in (utils.PacketType.REQUEST_PLUGIN_LIST,
                                                             utils.PacketType.PLUGIN_SPECIFIC):
             raise utils.SDKVersionError("Plugin controls not supported on protocol versions < 4.  You probably need to update OpenRGB")
+        elif self._protocol_version < 5 and packet_type == utils.PacketType.RGBCONTROLLER_RESIZEZONE:
+            raise utils.SDKVersionError("Zone resize with effects-only zones not supported on protocol versions < 5.  You probably need to update OpenRGB")
 
     @property
     def connected(self) -> bool:
