@@ -120,7 +120,7 @@ def parse_string(data: Iterator[int]) -> str:
     :returns: A parsed string
     '''
     length = parse_var('H', data)
-    return parse_var(f'{length}s', data).decode().rstrip('\x00')
+    return parse_var(f'{length}s', data).decode('latin-1').rstrip('\x00')
 
 
 def pack_string(string: str) -> bytes:

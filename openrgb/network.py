@@ -194,6 +194,24 @@ class NetworkClient:
                     self.lock.release()
                 self.callback(device_id, packet_type, idata)
 
+            else:
+                # Catch-all: handle unknown/unexpected packet types
+                # (e.g. DETECTION_STARTED, DETECTION_PROGRESS, DETECTION_COMPLETE,
+                #  LOGMANAGER_LOGGED_ENTRY, PROFILEMANAGER notifications, etc.)
+                # Read and discard the data, then recurse to read the actual
+                # expected response. Do NOT release the lock here — the
+                # recursive read()'s handler will do that.
+                try:
+                    if packet_size > 0:
+                        data = bytes()
+                        while len(data) < packet_size:
+                            data += self.sock.recv(packet_size - len(data))
+                except utils.CONNECTION_ERRORS as e:
+                    self.stop_connection()
+                    raise utils.OpenRGBDisconnected() from e
+                self.callback(device_id, packet_type, None)
+                self.read()
+
     def requestDeviceData(self, device: int):
         '''
         Sends the request for a device's data
